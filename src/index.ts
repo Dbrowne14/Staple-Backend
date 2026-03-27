@@ -1,19 +1,20 @@
 import express, { Request, Response } from "express";
 
-
 import {
   handlePips,
   handlePrice,
   handleTypeLine,
   handleYear,
   getImg,
-} from "./jsonProcess";
-import type { ReturnStructure } from "./jsonProcess";
+} from "./apiObjectLogic";
+import type { ReturnStructure } from "./types/types";
 
 const app = express();
 const baseUrl = "https://api.scryfall.com";
 const cardsLimit = 1000;
 
+
+//get request for the dataset
 app.get("/cards/search", async (req: Request, res: Response) => {
   if (!req.query) {
     return res.status(400).json({ error: "invalid search" });
@@ -31,6 +32,7 @@ app.get("/cards/search", async (req: Request, res: Response) => {
 
     const data = await response.json();
 
+    //predefined object based on structure of the game
     const returnObject = data.data.map((card: ReturnStructure) => ({
       Name: card.name,
       CMC: card.cmc,
@@ -45,7 +47,7 @@ app.get("/cards/search", async (req: Request, res: Response) => {
       Price: handlePrice(card),
       Pips: handlePips(card),
       Colors: card.color_identity.length,
-      Rank: card.edhrec_rank
+      Rank: card.edhrec_rank,
     }));
 
     res.json(returnObject);
@@ -56,6 +58,4 @@ app.get("/cards/search", async (req: Request, res: Response) => {
   }
 });
 
-
 app.listen(3000, () => console.log("Server running on Port 3000"));
-
