@@ -1,3 +1,5 @@
+//deprecated but useful to see structure of JSON object
+
 export const dummyData = {
   "object": "card",
   "id": "e4b1aa1e-b4e3-4346-8937-76b312501c70",
