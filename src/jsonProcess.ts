@@ -4,7 +4,7 @@ interface CardFace {
   image_uris?: { normal: string };
 }
 
-interface ReturnStructure {
+export interface ReturnStructure {
   name: string;
   cmc: number;
   type_line: string;
@@ -18,6 +18,7 @@ interface ReturnStructure {
   };
   color_identity: string[];
   image_uris?: { normal: string };
+  edhrec_rank: number
 }
 
 function getImg(returnStructure: ReturnStructure) {
