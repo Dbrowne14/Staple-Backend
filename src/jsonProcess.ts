@@ -68,19 +68,4 @@ function handlePips(returnStucture: ReturnStructure) {
   return hasColor.length > 0 ? hasColor : noColor;
 }
 
-export const returnObject = {
-  Name: dummyData.name,
-  CMC: dummyData.cmc,
-  Type: handleTypeLine(dummyData),
-  Img: getImg(dummyData),
-  Year: handleYear(dummyData),
-  Rarity: dummyData.rarity,
-  Set: {
-    set: dummyData.set,
-    setName: dummyData.set_name,
-  },
-  Price: handlePrice(dummyData),
-  Pips: handlePips(dummyData),
-  Colors: dummyData.color_identity.length,
-};
-
+export {handlePips, handlePrice, handleTypeLine, handleYear, getImg}
