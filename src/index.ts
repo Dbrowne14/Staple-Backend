@@ -1,4 +1,6 @@
 import express, { Request, Response } from "express";
+
+
 import {
   handlePips,
   handlePrice,
@@ -8,7 +10,6 @@ import {
 } from "./jsonProcess";
 import type { ReturnStructure } from "./jsonProcess";
 
-console.log("Starting server...");
 const app = express();
 const baseUrl = "https://api.scryfall.com";
 const cardsLimit = 1000;
@@ -57,4 +58,4 @@ app.get("/cards/search", async (req: Request, res: Response) => {
 
 
 app.listen(3000, () => console.log("Server running on Port 3000"));
-console.log("Hello");
+
