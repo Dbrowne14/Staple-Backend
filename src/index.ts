@@ -1,13 +1,34 @@
 import express, { Request, Response } from "express";
-import { handlePips, handlePrice, handleTypeLine, handleYear, getImg } from "./jsonProcess";
+import {
+  handlePips,
+  handlePrice,
+  handleTypeLine,
+  handleYear,
+  getImg,
+} from "./jsonProcess";
 
 console.log("Starting server...");
 const cardName = "last+march+of+the+ents";
 const app = express();
 const baseUrl = "https://api.scryfall.com";
+const cardsLimit = 1000;
 
 app.get("/", (_: Request, res: Response) => {
   res.send("Hello World");
+});
+
+app.get("/cards/search", async (req, res) => {
+  if (!req.query) {
+    return res.status(400).json({ error: "invalid search" });
+  }
+
+  try {
+    const response = await fetch(`${baseUrl}/cards/search/q`);
+
+
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error", details: err });
+  }
 });
 
 app.get("/cards/named", async (req: Request, res: Response) => {
