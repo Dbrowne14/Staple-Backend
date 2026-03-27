@@ -1,4 +1,4 @@
-//deprecated but useful to see structure of JSON object
+//deprecated but useful as reference to see structure of a typical JSON object
 
 export const dummyData = {
   "object": "card",
