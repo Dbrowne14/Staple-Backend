@@ -3,6 +3,7 @@ interface CardFace {
 }
 
 export interface ReturnStructure {
+  id: string;
   name: string;
   cmc: number;
   type_line: string;
@@ -17,4 +18,10 @@ export interface ReturnStructure {
   color_identity: string[];
   image_uris?: { normal: string };
   edhrec_rank: number
+}
+
+export interface ScryfallData {
+  data: ReturnStructure[];
+  has_more: boolean;
+  next_page?: string;
 }

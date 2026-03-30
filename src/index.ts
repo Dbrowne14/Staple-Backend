@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response as ExpressResponse } from "express";
 
 import {
   handlePips,
@@ -7,33 +7,48 @@ import {
   handleYear,
   getImg,
 } from "./apiObjectLogic";
-import type { ReturnStructure } from "./types/types";
+import type { ReturnStructure, ScryfallData } from "./types/types";
 
 const app = express();
 const baseUrl = "https://api.scryfall.com";
 const cardsLimit = 1000;
 
+const fetchTopCards = async (limit: number) => {
+  let allCards: ReturnStructure[] = [];
+  let url: string | null =
+    `${baseUrl}/cards/search?q=game:paper+-t:land&order=edhrec&unique=cards`;
+
+  console.log('Starting Formula')
+
+  while (url && allCards.length < limit) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(JSON.stringify(errorData));
+    }
+
+    const data: ScryfallData = await response.json();
+    console.log(data)
+
+    allCards.push(...data.data);
+
+    url = data.has_more ? (data.next_page ?? null) : null;
+  }
+  return allCards.slice(0, limit);
+};
 
 //get request for the dataset
-app.get("/cards/search", async (req: Request, res: Response) => {
+app.get("/cards/search", async (req: Request, res: ExpressResponse) => {
   if (!req.query) {
     return res.status(400).json({ error: "invalid search" });
   }
 
   try {
-    const response = await fetch(
-      `${baseUrl}/cards/search?q=game:paper+-t:land&order=edhrec&unique=cards`,
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Scryfall error:", errorData);
-      return res.status(400).json(errorData);
-    }
-
-    const data = await response.json();
+    const rawData = await fetchTopCards(cardsLimit);
 
     //predefined object based on structure of the game
-    const returnObject = data.data.map((card: ReturnStructure) => ({
+    const returnObject = rawData.map((card: ReturnStructure) => ({
+      ScryFall_id: card.id,
       Name: card.name,
       CMC: card.cmc,
       Type: handleTypeLine(card),
