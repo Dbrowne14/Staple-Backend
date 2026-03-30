@@ -1,5 +1,5 @@
 import express, { Request, Response as ExpressResponse } from "express";
-
+import { Pool } from "pg";
 import {
   handlePips,
   handlePrice,
@@ -9,6 +9,18 @@ import {
   fetchTopCards
 } from "./apiObjectLogic";
 import type { ReturnStructure } from "./types/types";
+
+const pool = new Pool({
+  user: 'davidbrowne',
+  host: 'localhost',
+  database: 'Staple_db',
+  port: 5432
+});
+
+(async () => {
+  const res = await pool.query('SELECT NOW()');
+  console.log(res.rows);
+})();
 
 const app = express();
 const cardsLimit = 1000;
