@@ -54,6 +54,7 @@ app.get("/cards/search", async (req: Request, res: ExpressResponse) => {
       Colors: card.color_identity.length,
       Rank: card.edhrec_rank,
     }));
+    
     for (const card of returnObject) {
       const {
         ScryFall_id,
