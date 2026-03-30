@@ -1,6 +1,31 @@
-import type { ReturnStructure } from "./types/types";
+import type { ReturnStructure, ScryfallData } from "./types/types";
 
 //logic for handling the variable datastructures
+
+const fetchTopCards = async (limit: number) => {
+  const baseUrl = "https://api.scryfall.com";
+  let allCards: ReturnStructure[] = [];
+  let url: string | null =
+    `${baseUrl}/cards/search?q=game:paper+-t:land&order=edhrec&unique=cards`;
+
+  console.log('Starting Formula')
+
+  while (url && allCards.length < limit) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(JSON.stringify(errorData));
+    }
+
+    const data: ScryfallData = await response.json();
+    console.log(data)
+
+    allCards.push(...data.data);
+
+    url = data.has_more ? (data.next_page ?? null) : null;
+  }
+  return allCards.slice(0, limit);
+};
 
 function getImg(returnStructure: ReturnStructure) {
   const imageUriDirect = returnStructure?.image_uris?.normal;
@@ -50,4 +75,4 @@ function handlePips(returnStucture: ReturnStructure) {
   return hasColor.length > 0 ? hasColor : noColor;
 }
 
-export {handlePips, handlePrice, handleTypeLine, handleYear, getImg}
+export {handlePips, handlePrice, handleTypeLine, handleYear, getImg, fetchTopCards}
