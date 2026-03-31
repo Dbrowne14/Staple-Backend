@@ -59,10 +59,10 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
 //update todaysWord on serverRefresh
 (async () => {
   const response = await pool.query(
-    "SELECT name FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
+    "SELECT name, img FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
   );
   if (response.rows[0]) {
-    todaysWord = response.rows[0].name;
+    todaysWord = response.rows[0];
   }
 })();
 
@@ -70,8 +70,34 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
 
 // route for front-end to get todaysWord
 app.get("/todays_word", (_, res) => {
-  res.status(200).json({ word: todaysWord });
+  res.status(200).json(todaysWord);
 });
+
+// Search for card
+app.get("/cards", async (req: Request, res: ExpressResponse) => {
+  const searchQuery = req.query.search as string;
+
+  try {
+    const response = await pool.query(
+      `SELECT * FROM cards WHERE name = $1`,[searchQuery]
+    )
+
+    res.status(200).json(response.rows)
+
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
+});
+
+//Get all cards 
+app.get("/allCards", async (_, res: ExpressResponse)=> {
+  try {
+    const response = await pool.query(`SELECT * FROM cards`)
+    res.status(200).json(response.rows)
+  } catch(err) {
+    res.status(500).json({error:err})
+  }
+})
 
 /*--------- Cron Calls ------------ */
 
