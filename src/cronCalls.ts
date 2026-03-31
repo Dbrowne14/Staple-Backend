@@ -79,3 +79,22 @@ export const updateDatabase = async () => {
     );
   }
 };
+
+export const selectTodaysWord = async () => {
+  console.log("selecting word");
+
+  const response = await pool.query(
+    `SELECT * FROM cards WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`,
+  );
+
+  const randomCard = response.rows[0];
+  console.log(randomCard);
+
+  const updateCards = await pool.query(
+    `
+    UPDATE cards SET already_selected = TRUE, date_selected = NOW() WHERE scryfall_id = $1`,
+    [randomCard.scryfall_id],
+  );
+
+  return randomCard
+};
