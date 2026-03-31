@@ -4,6 +4,7 @@ import { cardsLimit } from "./data/inputData";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord } from "./cronCalls";
 import type { ReturnStructure } from "./types/types";
+import cors from "cors";
 
 const pool = new Pool({
   user: "davidbrowne",
@@ -13,9 +14,11 @@ const pool = new Pool({
 });
 
 const app = express();
+app.use(cors());
+
 let todaysWord = "Sol Ring";
 
-/*-------- Tests for dev ------*/ 
+/*-------- Tests for dev ------*/
 
 //test baseroute
 app.get("/", (_, res) => {
@@ -29,7 +32,6 @@ app.get("/", (_, res) => {
   );
   console.log(res.rows);
 })();
-
 
 //test for daily content grab
 app.get("/test", async (_: Request, res: ExpressResponse) => {
@@ -52,7 +54,6 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
   }
 });
 
-
 /*----Updates on server refresh ----- */
 
 //update todaysWord on serverRefresh
@@ -65,14 +66,12 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
   }
 })();
 
-
 /*----------- Routes -------------- */
 
 // route for front-end to get todaysWord
 app.get("/todays_word", (_, res) => {
   res.status(200).json({ word: todaysWord });
 });
-
 
 /*--------- Cron Calls ------------ */
 
@@ -91,7 +90,6 @@ cron.schedule(
     timezone: "Europe/London",
   },
 );
-
 
 //daily cron call to select word
 cron.schedule(
