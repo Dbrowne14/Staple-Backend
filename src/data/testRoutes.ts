@@ -10,7 +10,11 @@ const pool = new Pool({
   port: 5432,
 });
 
-app.get("/test", async (_, res) => {
+app.get("/", (_, res) => {
+    res.status(200).json({response: "HELLO WORLD"})
+})
+
+app.get("/test", async (_: Request, res: ExpressResponse) => {
  try { const response = await pool.query(
     `SELECT * FROM cards WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`
   );
@@ -27,3 +31,4 @@ app.get("/test", async (_, res) => {
 }
 
 });
+
