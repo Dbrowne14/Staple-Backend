@@ -1,6 +1,9 @@
-import type { ReturnStructure, ScryfallData } from "./types/types";
+import type { ReturnStructure, DbReturnStructure, ScryfallData } from "./types/types";
+import { QueryResult } from "pg";
 
 //logic for handling the variable datastructures
+
+
 
 const fetchTopCards = async (limit: number) => {
   const baseUrl = "https://api.scryfall.com";
@@ -26,6 +29,17 @@ const fetchTopCards = async (limit: number) => {
   }
   return allCards.slice(0, limit);
 };
+
+type DbCard = Omit<DbReturnStructure, "price"> & {
+  price: string;
+};
+
+const convertPriceToNumber = (array: QueryResult<DbCard>): DbReturnStructure[]=> {
+   return array.rows.map(card => ({
+    ...card,
+    price: parseFloat(card.price)
+   }))
+}
 
 function getImg(returnStructure: ReturnStructure) {
   const imageUriDirect = returnStructure?.image_uris?.normal;
@@ -75,4 +89,4 @@ function handlePips(returnStucture: ReturnStructure) {
   return hasColor.length > 0 ? hasColor : noColor;
 }
 
-export {handlePips, handlePrice, handleTypeLine, handleYear, getImg, fetchTopCards}
+export {handlePips, handlePrice, handleTypeLine, handleYear, getImg, fetchTopCards, convertPriceToNumber}

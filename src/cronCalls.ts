@@ -5,6 +5,7 @@ import {
   handleYear,
   getImg,
   fetchTopCards,
+  convertPriceToNumber,
 } from "./apiObjectLogic";
 import { cardsLimit } from "./data/inputData";
 
@@ -86,8 +87,8 @@ export const selectTodaysWord = async () => {
   const response = await pool.query(
     `SELECT * FROM cards WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`,
   );
-
-  const randomCard = response.rows[0];
+  const formattedResponse = convertPriceToNumber(response);
+  const randomCard = formattedResponse[0];
   console.log(randomCard);
 
   const updateCards = await pool.query(
@@ -96,5 +97,5 @@ export const selectTodaysWord = async () => {
     [randomCard.scryfall_id],
   );
 
-  return randomCard
+  return randomCard;
 };
