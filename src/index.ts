@@ -59,7 +59,7 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
 //update todaysWord on serverRefresh
 (async () => {
   const response = await pool.query(
-    "SELECT name, img FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
+    "SELECT * FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
   );
   if (response.rows[0]) {
     todaysWord = response.rows[0];
