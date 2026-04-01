@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { cardsLimit } from "./data/inputData";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord } from "./cronCalls";
-import type { ReturnStructure } from "./types/types";
+import type { DbReturnStructure } from "./types/types";
 import cors from "cors";
 
 const pool = new Pool({
@@ -16,7 +16,7 @@ const pool = new Pool({
 const app = express();
 app.use(cors());
 
-let todaysWord = "Sol Ring";
+let todaysWord: DbReturnStructure | null = null;
 
 /*-------- Tests for dev ------*/
 
@@ -119,11 +119,11 @@ cron.schedule(
 
 //daily cron call to select word
 cron.schedule(
-  "0 53 15 * * *",
+  "0 08 15 * * *",
   async () => {
     try {
       const wordStructure = await selectTodaysWord();
-      todaysWord = wordStructure.name;
+      todaysWord = wordStructure;
       console.log(todaysWord);
     } catch (err) {
       console.error("Failed to select random card", err);
