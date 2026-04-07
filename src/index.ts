@@ -3,7 +3,12 @@ import { Pool } from "pg";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord } from "./cronCalls";
 import { convertPriceToNumber } from "./apiObjectLogic";
-import type { DbReturnStructure } from "./types/types";
+import type {
+  DbReturnStructure,
+  ScryFallSets,
+  SetStructure,
+} from "./types/types";
+import { fetchAllSets } from "./apiObjectLogic";
 import cors from "cors";
 
 const pool = new Pool({
@@ -62,9 +67,9 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
     "SELECT * FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
   );
   if (response.rows[0]) {
-    const formattedResponse = convertPriceToNumber(response)
+    const formattedResponse = convertPriceToNumber(response);
     todaysWord = formattedResponse[0];
-    console.log(todaysWord)
+    console.log(todaysWord);
   }
 })();
 
@@ -75,18 +80,16 @@ app.get("/todays_word", (_, res) => {
   res.status(200).json(todaysWord);
 });
 
-
-
-//Get all cards 
-app.get("/allCards", async (_, res: ExpressResponse)=> {
+//Get all cards
+app.get("/allCards", async (_, res: ExpressResponse) => {
   try {
-    const response = await pool.query(`SELECT * FROM cards`)
-    const normalizedCards = convertPriceToNumber(response)
-    res.status(200).json(normalizedCards)
-  } catch(err) {
-    res.status(500).json({error:err})
+    const response = await pool.query(`SELECT * FROM cards`);
+    const normalizedCards = convertPriceToNumber(response);
+    res.status(200).json(normalizedCards);
+  } catch (err) {
+    res.status(500).json({ error: err });
   }
-})
+});
 
 /*--------- Cron Calls ------------ */
 
@@ -123,4 +126,46 @@ cron.schedule(
   },
 );
 
+app.get("/sets", async (req: Request, res: ExpressResponse) => {
+  const setData: ScryFallSets = await fetchAllSets();
+  if (!setData) {
+    res.status(501).json({ error: "fetchError" });
+  }
+  const allowedTypes = [
+    "core",
+    "expansion",
+    "commander",
+    "masters",
+    "draft_innovation",
+    "box",
+    "eternal",
+    "planechase",
+    "funny",
+    "duel_deck"
+  ];
+  const setFiltered: SetStructure[] = setData.data.filter((set) =>
+    allowedTypes.includes(set.set_type),
+  );
+  const mappedSet = setFiltered.map((set) => ({
+    code: set.code,
+    name: set.name,
+    uri: set.uri,
+    releasedAt: set.released_at,
+    set_type: set.set_type,
+    card_count: set.card_count,
+    icon_svg_uri: set.icon_svg_uri,
+  }));
+
+  for (const set of mappedSet) {
+    const { code, name, uri, releasedAt, set_type, card_count, icon_svg_uri } =
+      set;
+
+    await pool.query(
+      `INSERT INTO sets(code, name, uri, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (code) DO NOTHING`,
+      [code, name, uri, releasedAt, set_type, card_count, icon_svg_uri],
+    );
+  }
+
+  res.status(201).json(mappedSet);
+});
 app.listen(3000, () => console.log("Server running on Port 3000"));

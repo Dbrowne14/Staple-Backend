@@ -48,8 +48,14 @@ export interface SetStructure {
   code: string;
   name: string;
   uri: string;
-  releasedAt: Date;
+  released_at: Date;
   set_type: string;
   card_count: number;
   icon_svg_uri: string;
+}
+
+export interface ScryFallSets {
+  object: string;
+  has_more: boolean;
+  data: SetStructure[];
 }
