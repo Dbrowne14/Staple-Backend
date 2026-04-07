@@ -108,7 +108,7 @@ cron.schedule(
 
 //daily cron call to select word
 cron.schedule(
-  "0 39 17 * * *",
+  "0 53 14 * * *",
   async () => {
     try {
       const wordStructure = await selectTodaysWord();

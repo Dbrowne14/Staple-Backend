@@ -43,3 +43,13 @@ export interface ScryfallData {
   has_more: boolean;
   next_page?: string;
 }
+
+export interface SetStructure {
+  code: string;
+  name: string;
+  uri: string;
+  releasedAt: Date;
+  set_type: string;
+  card_count: number;
+  icon_svg_uri: string;
+}
