@@ -5,11 +5,11 @@ import {
   handleYear,
   getImg,
   fetchTopCards,
-  convertPriceToNumber,
+  convertPriceToNumber, fetchAllSets
 } from "./apiObjectLogic";
 import { cardsLimit } from "./data/inputData";
 
-import type { ReturnStructure } from "./types/types";
+import type { ReturnStructure, SetStructure,ScryFallSets } from "./types/types";
 
 import { Pool } from "pg";
 
@@ -32,10 +32,7 @@ export const updateDatabase = async () => {
     Img: getImg(card),
     Year: handleYear(card),
     Rarity: card.rarity,
-    Set: {
-      set: card.set,
-      setName: card.set_name,
-    },
+    Set: card.set,
     Price: handlePrice(card),
     Pips: handlePips(card),
     Colors: card.color_identity.length,
@@ -51,7 +48,7 @@ export const updateDatabase = async () => {
       Img,
       Year,
       Rarity,
-      Set: { set, setName },
+      Set,
       Price,
       Pips,
       Colors,
@@ -59,7 +56,7 @@ export const updateDatabase = async () => {
     } = card;
 
     await pool.query(
-      `INSERT INTO cards(scryfall_id, name, cmc, type, islegendary, img, year, rarity, set_code, set_name, price, pips, colors, edhrec_rank)
+      `INSERT INTO cards(scryfall_id, name, cmc, type, islegendary, img, year, rarity, set_code, price, pips, colors, edhrec_rank)
           VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (scryfall_id) DO NOTHING`,
       [
         ScryFall_id,
@@ -70,8 +67,7 @@ export const updateDatabase = async () => {
         Img,
         Year,
         Rarity,
-        set,
-        setName,
+        Set,
         Price,
         Pips,
         Colors,
@@ -98,4 +94,42 @@ export const selectTodaysWord = async () => {
   );
 
   return randomCard;
+};
+
+export const updateSetData = async () => {
+  const setData: ScryFallSets = await fetchAllSets();
+  const allowedTypes = [
+    "core",
+    "expansion",
+    "commander",
+    "masters",
+    "draft_innovation",
+    "box",
+    "eternal",
+    "planechase",
+    "funny",
+    "duel_deck",
+  ];
+  const setFiltered: SetStructure[] = setData.data.filter((set) =>
+    allowedTypes.includes(set.set_type),
+  );
+  const mappedSet = setFiltered.map((set) => ({
+    code: set.code,
+    name: set.name,
+    uri: set.uri,
+    releasedAt: set.released_at,
+    set_type: set.set_type,
+    card_count: set.card_count,
+    icon_svg_uri: set.icon_svg_uri,
+  }));
+
+  for (const set of mappedSet) {
+    const { code, name, uri, releasedAt, set_type, card_count, icon_svg_uri } =
+      set;
+
+    await pool.query(
+      `INSERT INTO sets(code, name, uri, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (code) DO NOTHING`,
+      [code, name, uri, releasedAt, set_type, card_count, icon_svg_uri],
+    );
+  }
 };
