@@ -5,11 +5,16 @@ import {
   handleYear,
   getImg,
   fetchTopCards,
-  convertPriceToNumber, fetchAllSets
+  convertPriceToNumber,
+  fetchAllSets, getOracleText
 } from "./apiObjectLogic";
 import { cardsLimit } from "./data/inputData";
 
-import type { ReturnStructure, SetStructure,ScryFallSets } from "./types/types";
+import type {
+  ReturnStructure,
+  SetStructure,
+  ScryFallSets,
+} from "./types/types";
 
 import { Pool } from "pg";
 
@@ -37,7 +42,7 @@ export const updateDatabase = async () => {
     Pips: handlePips(card),
     Colors: card.color_identity.length,
     Rank: card.edhrec_rank,
-    Oracle_Text: card.oracle_text
+    Oracle_Text: getOracleText(card),
   }));
 
   for (const card of returnObject) {
@@ -53,12 +58,26 @@ export const updateDatabase = async () => {
       Pips,
       Colors,
       Rank,
-      Oracle_Text
+      Oracle_Text,
     } = card;
 
     await pool.query(
       `INSERT INTO cards(scryfall_id, name, cmc, type, islegendary, img, rarity, set_code, price, pips, colors, edhrec_rank, oracle_text)
-          VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) ON CONFLICT (scryfall_id) DO NOTHING`,
+        VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (name)
+        DO UPDATE SET
+        scryfall_id = EXCLUDED.scryfall_id,
+        cmc = EXCLUDED.cmc,
+        type = EXCLUDED.type,
+        islegendary = EXCLUDED.islegendary,
+        img = EXCLUDED.img,
+        rarity = EXCLUDED.rarity,
+        set_code = EXCLUDED.set_code,
+        price = EXCLUDED.price,
+        pips = EXCLUDED.pips,
+        colors = EXCLUDED.colors,
+        edhrec_rank = EXCLUDED.edhrec_rank,
+        oracle_text = EXCLUDED.oracle_text`,
       [
         ScryFall_id,
         Name,
@@ -72,7 +91,7 @@ export const updateDatabase = async () => {
         Pips,
         Colors,
         Rank,
-        Oracle_Text
+        Oracle_Text,
       ],
     );
   }
@@ -82,7 +101,9 @@ export const selectTodaysWord = async () => {
   console.log("selecting word");
 
   const response = await pool.query(
-    `SELECT * FROM cards WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`,
+    `SELECT c.*, s.*
+    FROM cards c
+    JOIN sets s ON c.set_code = s.code WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`,
   );
   const formattedResponse = convertPriceToNumber(response);
   const randomCard = formattedResponse[0];
@@ -90,8 +111,8 @@ export const selectTodaysWord = async () => {
 
   const updateCards = await pool.query(
     `
-    UPDATE cards SET already_selected = TRUE, date_selected = NOW() WHERE scryfall_id = $1`,
-    [randomCard.scryfall_id],
+    UPDATE cards SET already_selected = TRUE, date_selected = NOW() WHERE name = $1`,
+    [randomCard.name],
   );
 
   return randomCard;
@@ -126,8 +147,16 @@ export const updateSetData = async () => {
   }));
 
   for (const set of mappedSet) {
-    const { code, name, uri, year, releasedAt, set_type, card_count, icon_svg_uri } =
-      set;
+    const {
+      code,
+      name,
+      uri,
+      year,
+      releasedAt,
+      set_type,
+      card_count,
+      icon_svg_uri,
+    } = set;
 
     await pool.query(
       `INSERT INTO sets(code, name, uri, year, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (code) DO NOTHING`,

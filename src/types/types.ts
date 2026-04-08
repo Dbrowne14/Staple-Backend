@@ -1,4 +1,5 @@
 interface CardFace {
+  oracle_text: string;
   image_uris?: { normal: string };
 }
 

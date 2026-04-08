@@ -6,10 +6,9 @@ import type {
 import { QueryResult } from "pg";
 
 //logic for handling the variable datastructures
-  const baseUrl = "https://api.scryfall.com";
+const baseUrl = "https://api.scryfall.com";
 
 const fetchTopCards = async (limit: number) => {
-
   let allCards: ReturnStructure[] = [];
   let url: string | null =
     `${baseUrl}/cards/search?q=game:paper+-t:land&order=edhrec&unique=cards`;
@@ -34,13 +33,13 @@ const fetchTopCards = async (limit: number) => {
 };
 
 export const fetchAllSets = async () => {
-  const response = await fetch(`${baseUrl}/sets`)
-  if(!response.ok) {
-    const errorData = await response.json()
-    throw new Error(JSON.stringify(errorData))
+  const response = await fetch(`${baseUrl}/sets`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(JSON.stringify(errorData));
   }
-  const setData = await response.json()
-  return setData
+  const setData = await response.json();
+  return setData;
 };
 
 type DbCard = Omit<DbReturnStructure, "price"> & {
@@ -62,7 +61,13 @@ function getImg(returnStructure: ReturnStructure) {
   return imageUriDirect ? imageUriDirect : cardInfo;
 }
 
-function handleYear(date:string) {
+function getOracleText(returnStucture: ReturnStructure) {
+  const directOracleText = returnStucture?.oracle_text;
+  const doubleSided = `DOUBLE-SIDED ${returnStucture?.card_faces?.[0]?.oracle_text ?? ""}`;
+  return directOracleText ? directOracleText : doubleSided;
+}
+
+function handleYear(date: string) {
   const year = Number(date.slice(0, 4));
   return year;
 }
@@ -111,4 +116,5 @@ export {
   getImg,
   fetchTopCards,
   convertPriceToNumber,
+  getOracleText,
 };

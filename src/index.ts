@@ -3,15 +3,17 @@ import { Pool } from "pg";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls";
 import { convertPriceToNumber } from "./apiObjectLogic";
-import type {
-  DbReturnStructure,
-  ScryFallSets,
-  SetStructure,
-} from "./types/types";
-import { fetchAllSets } from "./apiObjectLogic";
-import { handleYear } from "./apiObjectLogic";
-
+import type { DbReturnStructure, ReturnStructure } from "./types/types";
+import { fetchTopCards } from "./apiObjectLogic";
+import { cardsLimit } from "./data/inputData";
 import cors from "cors";
+import {
+  handlePips,
+  handlePrice,
+  handleTypeLine,
+  handleYear,
+  getImg, getOracleText
+} from "./apiObjectLogic";
 
 const pool = new Pool({
   user: "davidbrowne",
@@ -40,33 +42,15 @@ app.get("/", (_, res) => {
   console.log(res.rows);
 })();
 
-//test for daily content grab
-app.get("/test", async (_: Request, res: ExpressResponse) => {
-  try {
-    const response = await pool.query(
-      `SELECT * FROM cards WHERE already_selected = FALSE ORDER BY RANDOM() LIMIT 1;`,
-    );
-
-    const randomCard = response.rows[0];
-    console.log(randomCard);
-    res.status(200).json(randomCard);
-
-    const updateCards = await pool.query(
-      `
-    UPDATE cards SET already_selected = TRUE, date_selected = NOW() WHERE scryfall_id = $1`,
-      [randomCard.scryfall_id],
-    );
-  } catch (err) {
-    res.status(500).json({ error: err });
-  }
-});
 
 /*----Updates on server refresh ----- */
 
 //update todaysWord on serverRefresh
 (async () => {
   const response = await pool.query(
-    "SELECT * FROM cards WHERE date_selected = CURRENT_DATE LIMIT 1",
+    `SELECT c.*, s.*
+    FROM cards c
+    JOIN sets s ON c.set_code = s.code WHERE date_selected = CURRENT_DATE LIMIT 1`,
   );
   if (response.rows[0]) {
     const formattedResponse = convertPriceToNumber(response);
@@ -85,7 +69,9 @@ app.get("/todays_word", (_, res) => {
 //Get all cards
 app.get("/allCards", async (_, res: ExpressResponse) => {
   try {
-    const response = await pool.query(`SELECT * FROM cards`);
+    const response = await pool.query(`SELECT c.*, s.*
+    FROM cards c
+    JOIN sets s ON c.set_code = s.code;`);
     const normalizedCards = convertPriceToNumber(response);
     res.status(200).json(normalizedCards);
   } catch (err) {
@@ -97,7 +83,7 @@ app.get("/allCards", async (_, res: ExpressResponse) => {
 
 //daily cron call to select word
 cron.schedule(
-  "0 53 14 * * *",
+  "0 11 17 * * *",
   async () => {
     try {
       const wordStructure = await selectTodaysWord();
@@ -146,52 +132,77 @@ cron.schedule(
 
 app.listen(3000, () => console.log("Server running on Port 3000"));
 
-app.get("/sets", async (req: Request, res: ExpressResponse) => {
-  const setData: ScryFallSets = await fetchAllSets();
-  if (!setData) {
-    return res.status(501).json({ error: "fetchError" });
-  }
-  const allowedTypes = [
-    "core",
-    "expansion",
-    "commander",
-    "masters",
-    "draft_innovation",
-    "box",
-    "eternal",
-    "planechase",
-    "funny",
-    "duel_deck",
-  ];
-  const setFiltered: SetStructure[] = setData.data.filter((set) =>
-    allowedTypes.includes(set.set_type),
-  );
-  const mappedSet = setFiltered.map((set) => ({
-    code: set.code,
-    name: set.name,
-    uri: set.uri,
-    year: handleYear(set.released_at),
-    releasedAt: set.released_at,
-    set_type: set.set_type,
-    card_count: set.card_count,
-    icon_svg_uri: set.icon_svg_uri,
+app.get("/cards", async (req: Request, res: ExpressResponse) => {
+  const rawData = await fetchTopCards(cardsLimit);
+
+  //predefined object based on structure of the game
+  const returnObject = rawData.map((card: ReturnStructure) => ({
+    ScryFall_id: card.id,
+    Name: card.name,
+    CMC: card.cmc,
+    Type: handleTypeLine(card),
+    Img: getImg(card),
+    Year: handleYear(card.released_at),
+    Rarity: card.rarity,
+    Set: card.set,
+    Price: handlePrice(card),
+    Pips: handlePips(card),
+    Colors: card.color_identity.length,
+    Rank: card.edhrec_rank,
+    Oracle_Text: getOracleText(card),
   }));
 
-  for (const set of mappedSet) {
+  for (const card of returnObject) {
     const {
-      code,
-
-      year,
-    } = set;
+      ScryFall_id,
+      Name,
+      CMC,
+      Type: { type, legendary },
+      Img,
+      Rarity,
+      Set,
+      Price,
+      Pips,
+      Colors,
+      Rank,
+      Oracle_Text,
+    } = card;
 
     await pool.query(
-      `INSERT INTO sets(code, year)
-   VALUES ($1, $2)
-   ON CONFLICT (code)
-   DO UPDATE SET year = EXCLUDED.year`,
-      [code, year],
+      `INSERT INTO cards(
+      scryfall_id, name, cmc, type, islegendary, img, rarity, set_code, price, pips, colors, edhrec_rank, oracle_text
+    )
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    ON CONFLICT (name)
+    DO UPDATE SET
+      scryfall_id = EXCLUDED.scryfall_id,
+      cmc = EXCLUDED.cmc,
+      type = EXCLUDED.type,
+      islegendary = EXCLUDED.islegendary,
+      img = EXCLUDED.img,
+      rarity = EXCLUDED.rarity,
+      set_code = EXCLUDED.set_code,
+      price = EXCLUDED.price,
+      pips = EXCLUDED.pips,
+      colors = EXCLUDED.colors,
+      edhrec_rank = EXCLUDED.edhrec_rank,
+      oracle_text = EXCLUDED.oracle_text`,
+      [
+        ScryFall_id,
+        Name,
+        CMC,
+        type,
+        legendary,
+        Img,
+        Rarity,
+        Set,
+        Price,
+        Pips,
+        Colors,
+        Rank,
+        Oracle_Text,
+      ],
     );
   }
-
-  res.status(201).json(mappedSet);
+  res.status(200).json({ returnObject });
 });
