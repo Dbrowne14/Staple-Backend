@@ -48,7 +48,7 @@ export interface SetStructure {
   code: string;
   name: string;
   uri: string;
-  released_at: Date;
+  released_at: string;
   set_type: string;
   card_count: number;
   icon_svg_uri: string;

@@ -1,6 +1,6 @@
 import express, { Request, Response as ExpressResponse } from "express";
 import { ScryFallSets, SetStructure } from "../types/types";
-import { fetchAllSets } from "../apiObjectLogic";
+import { fetchAllSets, handleYear } from "../apiObjectLogic";
 import { Pool } from "pg";
 
 const app = express();
@@ -36,10 +36,10 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
   }
 });
 
-app.post("/sets", async (req: Request, res: ExpressResponse) => {
+app.get("/sets", async (req: Request, res: ExpressResponse) => {
   const setData: ScryFallSets = await fetchAllSets();
-  if(!setData) {
-    return res.status(501).json({error: "fetchError"})
+  if (!setData) {
+    return res.status(501).json({ error: "fetchError" });
   }
   const allowedTypes = [
     "core",
@@ -47,6 +47,11 @@ app.post("/sets", async (req: Request, res: ExpressResponse) => {
     "commander",
     "masters",
     "draft_innovation",
+    "box",
+    "eternal",
+    "planechase",
+    "funny",
+    "duel_deck",
   ];
   const setFiltered: SetStructure[] = setData.data.filter((set) =>
     allowedTypes.includes(set.set_type),
@@ -55,27 +60,30 @@ app.post("/sets", async (req: Request, res: ExpressResponse) => {
     code: set.code,
     name: set.name,
     uri: set.uri,
-    released_at: set.released_at,
+    year: handleYear(set.released_at),
+    releasedAt: set.released_at,
     set_type: set.set_type,
     card_count: set.card_count,
     icon_svg_uri: set.icon_svg_uri,
   }));
 
   for (const set of mappedSet) {
-    const { code, name, uri, released_at, set_type, card_count, icon_svg_uri } =
-      set;
-
-    await pool.query(`INSERT INTO sets VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (code) DO NOTHING`, [
+    const {
       code,
       name,
       uri,
-      released_at,
+      year,
+      releasedAt,
       set_type,
       card_count,
       icon_svg_uri,
-    ]);
+    } = set;
+
+    await pool.query(
+      `INSERT INTO sets(code, name, uri, year, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (code) DO NOTHING`,
+      [code, name, uri, year, releasedAt, set_type, card_count, icon_svg_uri],
+    );
   }
 
   res.status(201).json(mappedSet);
-
 });

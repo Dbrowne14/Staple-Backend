@@ -30,7 +30,7 @@ export const updateDatabase = async () => {
     CMC: card.cmc,
     Type: handleTypeLine(card),
     Img: getImg(card),
-    Year: handleYear(card),
+    Year: handleYear(card.released_at),
     Rarity: card.rarity,
     Set: card.set,
     Price: handlePrice(card),
@@ -117,6 +117,7 @@ export const updateSetData = async () => {
     code: set.code,
     name: set.name,
     uri: set.uri,
+    year: handleYear(set.released_at),
     releasedAt: set.released_at,
     set_type: set.set_type,
     card_count: set.card_count,
@@ -124,12 +125,12 @@ export const updateSetData = async () => {
   }));
 
   for (const set of mappedSet) {
-    const { code, name, uri, releasedAt, set_type, card_count, icon_svg_uri } =
+    const { code, name, uri, year, releasedAt, set_type, card_count, icon_svg_uri } =
       set;
 
     await pool.query(
-      `INSERT INTO sets(code, name, uri, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (code) DO NOTHING`,
-      [code, name, uri, releasedAt, set_type, card_count, icon_svg_uri],
+      `INSERT INTO sets(code, name, uri, year, released_at, set_type, card_count, icon_svg_uri) VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (code) DO NOTHING`,
+      [code, name, uri, year, releasedAt, set_type, card_count, icon_svg_uri],
     );
   }
 };

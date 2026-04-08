@@ -3,7 +3,13 @@ import { Pool } from "pg";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls";
 import { convertPriceToNumber } from "./apiObjectLogic";
-import type { DbReturnStructure } from "./types/types";
+import type {
+  DbReturnStructure,
+  ScryFallSets,
+  SetStructure,
+} from "./types/types";
+import { fetchAllSets } from "./apiObjectLogic";
+import { handleYear } from "./apiObjectLogic";
 
 import cors from "cors";
 
@@ -139,3 +145,53 @@ cron.schedule(
 );
 
 app.listen(3000, () => console.log("Server running on Port 3000"));
+
+app.get("/sets", async (req: Request, res: ExpressResponse) => {
+  const setData: ScryFallSets = await fetchAllSets();
+  if (!setData) {
+    return res.status(501).json({ error: "fetchError" });
+  }
+  const allowedTypes = [
+    "core",
+    "expansion",
+    "commander",
+    "masters",
+    "draft_innovation",
+    "box",
+    "eternal",
+    "planechase",
+    "funny",
+    "duel_deck",
+  ];
+  const setFiltered: SetStructure[] = setData.data.filter((set) =>
+    allowedTypes.includes(set.set_type),
+  );
+  const mappedSet = setFiltered.map((set) => ({
+    code: set.code,
+    name: set.name,
+    uri: set.uri,
+    year: handleYear(set.released_at),
+    releasedAt: set.released_at,
+    set_type: set.set_type,
+    card_count: set.card_count,
+    icon_svg_uri: set.icon_svg_uri,
+  }));
+
+  for (const set of mappedSet) {
+    const {
+      code,
+
+      year,
+    } = set;
+
+    await pool.query(
+      `INSERT INTO sets(code, year)
+   VALUES ($1, $2)
+   ON CONFLICT (code)
+   DO UPDATE SET year = EXCLUDED.year`,
+      [code, year],
+    );
+  }
+
+  res.status(201).json(mappedSet);
+});

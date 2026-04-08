@@ -62,8 +62,7 @@ function getImg(returnStructure: ReturnStructure) {
   return imageUriDirect ? imageUriDirect : cardInfo;
 }
 
-function handleYear(returnStructure: ReturnStructure) {
-  const date = returnStructure["released_at"];
+function handleYear(date:string) {
   const year = Number(date.slice(0, 4));
   return year;
 }
