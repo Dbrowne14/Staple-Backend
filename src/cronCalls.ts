@@ -37,6 +37,7 @@ export const updateDatabase = async () => {
     Pips: handlePips(card),
     Colors: card.color_identity.length,
     Rank: card.edhrec_rank,
+    Oracle_Text: card.oracle_text
   }));
 
   for (const card of returnObject) {
@@ -46,18 +47,18 @@ export const updateDatabase = async () => {
       CMC,
       Type: { type, legendary },
       Img,
-      Year,
       Rarity,
       Set,
       Price,
       Pips,
       Colors,
       Rank,
+      Oracle_Text
     } = card;
 
     await pool.query(
-      `INSERT INTO cards(scryfall_id, name, cmc, type, islegendary, img, year, rarity, set_code, price, pips, colors, edhrec_rank)
-          VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (scryfall_id) DO NOTHING`,
+      `INSERT INTO cards(scryfall_id, name, cmc, type, islegendary, img, rarity, set_code, price, pips, colors, edhrec_rank, oracle_text)
+          VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) ON CONFLICT (scryfall_id) DO NOTHING`,
       [
         ScryFall_id,
         Name,
@@ -65,13 +66,13 @@ export const updateDatabase = async () => {
         type,
         legendary,
         Img,
-        Year,
         Rarity,
         Set,
         Price,
         Pips,
         Colors,
         Rank,
+        Oracle_Text
       ],
     );
   }

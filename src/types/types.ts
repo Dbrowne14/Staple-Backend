@@ -18,6 +18,7 @@ export interface ReturnStructure {
   color_identity: string[];
   image_uris?: { normal: string };
   edhrec_rank: number
+  oracle_text: string;
 }
 
 export interface DbReturnStructure {
@@ -36,6 +37,7 @@ export interface DbReturnStructure {
   pips: string[];
   colors: number;
   edhrec_rank: number;
+  oracle_text: string;
 }
 
 export interface ScryfallData {

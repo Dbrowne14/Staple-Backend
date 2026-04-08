@@ -1,7 +1,7 @@
 import type {
   ReturnStructure,
   DbReturnStructure,
-  ScryfallData, SetStructure
+  ScryfallData,
 } from "./types/types";
 import { QueryResult } from "pg";
 
