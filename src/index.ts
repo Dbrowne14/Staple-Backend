@@ -89,22 +89,6 @@ app.get("/allCards", async (_, res: ExpressResponse) => {
 
 /*--------- Cron Calls ------------ */
 
-//run cron call for weekly data update runs every Sunday
-cron.schedule(
-  "0 0 0 * * 0",
-  async () => {
-    try {
-      console.log("Starting weekly db update");
-      await updateDatabase();
-    } catch (err) {
-      console.error("Failed to update cards:", err);
-    }
-  },
-  {
-    timezone: "Europe/London",
-  },
-);
-
 //daily cron call to select word
 cron.schedule(
   "0 53 14 * * *",
@@ -122,7 +106,23 @@ cron.schedule(
   },
 );
 
-//run cron call for bi-weekly set data update runs every other Sunday
+//run cron call for monthly data update runs first day every month
+cron.schedule(
+  "0 0 0 1 * *",
+  async () => {
+    try {
+      console.log("Starting weekly db update");
+      await updateDatabase();
+    } catch (err) {
+      console.error("Failed to update cards:", err);
+    }
+  },
+  {
+    timezone: "Europe/London",
+  },
+);
+
+//run cron call for monthly set update tunds at 1am first day of month
 cron.schedule(
   "0 0 1 1 * *",
   async () => {
