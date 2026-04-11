@@ -55,7 +55,6 @@ app.get("/", (_, res) => {
   if (response.rows[0]) {
     const formattedResponse = convertPriceToNumber(response);
     todaysWord = formattedResponse[0];
-    console.log(todaysWord);
   }
 })();
 
@@ -64,6 +63,7 @@ app.get("/", (_, res) => {
 // route for front-end to get todaysWord
 app.get("/todays_word", (_, res) => {
   res.status(200).json(todaysWord);
+  console.log(todaysWord)
 });
 
 //Get all cards
@@ -83,7 +83,7 @@ app.get("/allCards", async (_, res: ExpressResponse) => {
 
 //daily cron call to select word
 cron.schedule(
-  "0 11 17 * * *",
+  "0 03 12 * * *",
   async () => {
     try {
       const wordStructure = await selectTodaysWord();
@@ -145,6 +145,7 @@ app.get("/cards", async (req: Request, res: ExpressResponse) => {
     Year: handleYear(card.released_at),
     Rarity: card.rarity,
     Set: card.set,
+    Set_Img: card.image_uris,
     Price: handlePrice(card),
     Pips: handlePips(card),
     Colors: card.color_identity.length,
