@@ -1,7 +1,6 @@
-import dns from "dns";
-dns.setDefaultResultOrder("ipv4first");
+
 import express, { Request, Response as ExpressResponse } from "express";
-import { Pool, PoolConfig } from "pg";
+import { Pool } from "pg";
 import * as cron from "node-cron";
 import {
   updateDatabase,
@@ -17,17 +16,14 @@ dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
-interface ExtendedPoolConfig extends PoolConfig {
-  family?: number;
-}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-  family: 4,
-} as ExtendedPoolConfig);
+
+} );
 
 async function testConnection() {
   try {
