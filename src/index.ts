@@ -6,13 +6,31 @@ import { convertPriceToNumber } from "./apiObjectLogic";
 import type { DbReturnStructure } from "./types/types";
 import cors from "cors";
 
-
 const pool = new Pool({
   user: "davidbrowne",
   host: "localhost",
   database: "Staple_db",
   port: 5432,
 });
+
+const cloud = new Pool({
+  connectionString:
+    "postgresql://postgres:Snazziey14%3F@db.rclsqexnxrkytorlmqxa.supabase.co:5432/postgres",
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+async function testConnection() {
+  try {
+    const result = await cloud.query("SELECT NOW()");
+    console.log("Connected:", result.rows[0]);
+  } catch (err) {
+    console.error("DB Error here:", err);
+  }
+}
+
+testConnection();
 
 const app = express();
 app.use(cors());
@@ -34,7 +52,6 @@ app.get("/", (_, res) => {
   console.log(res.rows);
 })();
 
-
 /*----Updates on server refresh ----- */
 
 //update todaysWord on serverRefresh
@@ -47,7 +64,7 @@ app.get("/", (_, res) => {
   if (response.rows[0]) {
     const formattedResponse = convertPriceToNumber(response);
     todaysWord = formattedResponse[0];
-    console.log(todaysWord)
+    console.log(todaysWord);
   }
 })();
 
@@ -73,7 +90,7 @@ app.get("/allCards", async (_, res: ExpressResponse) => {
   } catch (err) {
     res.status(500).json({ error: err });
   }
-}); 
+});
 
 /*--------- Cron Calls ------------ */
 
@@ -127,4 +144,3 @@ cron.schedule(
 );
 
 app.listen(3000, () => console.log("Server running on Port 3000"));
-

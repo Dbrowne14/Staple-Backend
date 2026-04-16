@@ -13,6 +13,8 @@ const pool = new Pool({
   port: 5432,
 });
 
+
+
 app.get("/", (_, res) => {
   res.status(200).json({ response: "HELLO WORLD" });
 });
