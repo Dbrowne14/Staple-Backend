@@ -28,7 +28,6 @@ async function testConnection() {
   }
 }
 
-testConnection();
 
 const app = express();
 app.use(cors());
@@ -42,29 +41,6 @@ app.get("/", (_, res) => {
   res.status(200).json({ response: "HELLO WORLD" });
 });
 
-//test row length for fetches
-(async () => {
-  const res = await pool.query(
-    `SELECT COUNT(*) as column_count FROM information_schema.columns WHERE table_name = 'cards'`,
-  );
-  console.log(res.rows);
-})();
-
-/*----Updates on server refresh ----- */
-
-//update todaysWord on serverRefresh
-(async () => {
-  const response = await pool.query(
-    `SELECT c.*, s.*
-    FROM cards c
-    JOIN sets s ON c.set_code = s.code WHERE date_selected = CURRENT_DATE LIMIT 1`,
-  );
-  if (response.rows[0]) {
-    const formattedResponse = convertPriceToNumber(response);
-    todaysWord = formattedResponse[0];
-    console.log(todaysWord);
-  }
-})();
 
 /*----------- Routes -------------- */
 
@@ -141,4 +117,25 @@ cron.schedule(
   },
 );
 
-app.listen(PORT, () => console.log(`Server running on Port ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Server running on Port ${PORT}`);
+
+  try {
+    await testConnection();
+    console.log("DB connected");
+
+    const response = await pool.query(
+      `SELECT c.*, s.*
+       FROM cards c
+       JOIN sets s ON c.set_code = s.code
+       WHERE date_selected = CURRENT_DATE
+       LIMIT 1`
+    );
+
+    if (response.rows[0]) {
+      todaysWord = convertPriceToNumber(response)[0];
+    }
+  } catch (err) {
+    console.error("Startup error:", err);
+  }
+});
