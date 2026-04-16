@@ -3,17 +3,9 @@ import { Pool } from "pg";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls";
 import { convertPriceToNumber } from "./apiObjectLogic";
-import type { DbReturnStructure, ReturnStructure } from "./types/types";
-import { fetchTopCards } from "./apiObjectLogic";
-import { cardsLimit } from "./data/inputData";
+import type { DbReturnStructure } from "./types/types";
 import cors from "cors";
-import {
-  handlePips,
-  handlePrice,
-  handleTypeLine,
-  handleYear,
-  getImg, getOracleText
-} from "./apiObjectLogic";
+
 
 const pool = new Pool({
   user: "davidbrowne",
@@ -87,7 +79,7 @@ app.get("/allCards", async (_, res: ExpressResponse) => {
 
 //daily cron call to select word
 cron.schedule(
-  "0 38 11 * * *",
+  "0 45 11 * * *",
   async () => {
     try {
       const wordStructure = await selectTodaysWord();
@@ -136,78 +128,3 @@ cron.schedule(
 
 app.listen(3000, () => console.log("Server running on Port 3000"));
 
-app.get("/cards", async (req: Request, res: ExpressResponse) => {
-  const rawData = await fetchTopCards(cardsLimit);
-
-  //predefined object based on structure of the game
-  const returnObject = rawData.map((card: ReturnStructure) => ({
-    ScryFall_id: card.id,
-    Name: card.name,
-    CMC: card.cmc,
-    Type: handleTypeLine(card),
-    Img: getImg(card),
-    Year: handleYear(card.released_at),
-    Rarity: card.rarity,
-    Set: card.set,
-    Set_Img: card.image_uris,
-    Price: handlePrice(card),
-    Pips: handlePips(card),
-    Colors: card.color_identity.length,
-    Rank: card.edhrec_rank,
-    Oracle_Text: getOracleText(card),
-  }));
-
-  for (const card of returnObject) {
-    const {
-      ScryFall_id,
-      Name,
-      CMC,
-      Type: { type, legendary },
-      Img,
-      Rarity,
-      Set,
-      Price,
-      Pips,
-      Colors,
-      Rank,
-      Oracle_Text,
-    } = card;
-
-    await pool.query(
-      `INSERT INTO cards(
-      scryfall_id, name, cmc, type, islegendary, img, rarity, set_code, price, pips, colors, edhrec_rank, oracle_text
-    )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    ON CONFLICT (name)
-    DO UPDATE SET
-      scryfall_id = EXCLUDED.scryfall_id,
-      cmc = EXCLUDED.cmc,
-      type = EXCLUDED.type,
-      islegendary = EXCLUDED.islegendary,
-      img = EXCLUDED.img,
-      rarity = EXCLUDED.rarity,
-      set_code = EXCLUDED.set_code,
-      price = EXCLUDED.price,
-      pips = EXCLUDED.pips,
-      colors = EXCLUDED.colors,
-      edhrec_rank = EXCLUDED.edhrec_rank,
-      oracle_text = EXCLUDED.oracle_text`,
-      [
-        ScryFall_id,
-        Name,
-        CMC,
-        type,
-        legendary,
-        Img,
-        Rarity,
-        Set,
-        Price,
-        Pips,
-        Colors,
-        Rank,
-        Oracle_Text,
-      ],
-    );
-  }
-  res.status(200).json({ returnObject });
-});

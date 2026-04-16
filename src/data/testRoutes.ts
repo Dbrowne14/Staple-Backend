@@ -1,6 +1,7 @@
 import express, { Request, Response as ExpressResponse } from "express";
-import { ScryFallSets, SetStructure } from "../types/types";
-import { fetchAllSets, handleYear } from "../apiObjectLogic";
+import { ScryFallSets, SetStructure, ReturnStructure } from "../types/types";
+import { fetchAllSets, handleYear, fetchTopCards, handlePips, handlePrice, handleTypeLine, getImg, getOracleText } from "../apiObjectLogic";
+import { cardsLimit } from "./inputData";
 import { Pool } from "pg";
 
 const app = express();
@@ -107,4 +108,81 @@ app.get("/test", async (_: Request, res: ExpressResponse) => {
 });
 
   res.status(201).json(mappedSet);
+});
+
+//test for getting all cards
+app.get("/cards", async (req: Request, res: ExpressResponse) => {
+  const rawData = await fetchTopCards(cardsLimit);
+
+  //predefined object based on structure of the game
+  const returnObject = rawData.map((card: ReturnStructure) => ({
+    ScryFall_id: card.id,
+    Name: card.name,
+    CMC: card.cmc,
+    Type: handleTypeLine(card),
+    Img: getImg(card),
+    Year: handleYear(card.released_at),
+    Rarity: card.rarity,
+    Set: card.set,
+    Set_Img: card.image_uris,
+    Price: handlePrice(card),
+    Pips: handlePips(card),
+    Colors: card.color_identity.length,
+    Rank: card.edhrec_rank,
+    Oracle_Text: getOracleText(card),
+  }));
+
+  for (const card of returnObject) {
+    const {
+      ScryFall_id,
+      Name,
+      CMC,
+      Type: { type, legendary },
+      Img,
+      Rarity,
+      Set,
+      Price,
+      Pips,
+      Colors,
+      Rank,
+      Oracle_Text,
+    } = card;
+
+    await pool.query(
+      `INSERT INTO cards(
+      scryfall_id, name, cmc, type, islegendary, img, rarity, set_code, price, pips, colors, edhrec_rank, oracle_text
+    )
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    ON CONFLICT (name)
+    DO UPDATE SET
+      scryfall_id = EXCLUDED.scryfall_id,
+      cmc = EXCLUDED.cmc,
+      type = EXCLUDED.type,
+      islegendary = EXCLUDED.islegendary,
+      img = EXCLUDED.img,
+      rarity = EXCLUDED.rarity,
+      set_code = EXCLUDED.set_code,
+      price = EXCLUDED.price,
+      pips = EXCLUDED.pips,
+      colors = EXCLUDED.colors,
+      edhrec_rank = EXCLUDED.edhrec_rank,
+      oracle_text = EXCLUDED.oracle_text`,
+      [
+        ScryFall_id,
+        Name,
+        CMC,
+        type,
+        legendary,
+        Img,
+        Rarity,
+        Set,
+        Price,
+        Pips,
+        Colors,
+        Rank,
+        Oracle_Text,
+      ],
+    );
+  }
+  res.status(200).json({ returnObject });
 });
