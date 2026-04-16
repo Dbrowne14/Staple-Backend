@@ -1,3 +1,7 @@
+
+/*---- purely for dev some useful test routes I apply -----*/
+
+
 import express, { Request, Response as ExpressResponse } from "express";
 import { ScryFallSets, SetStructure, ReturnStructure } from "../types/types";
 import { fetchAllSets, handleYear, fetchTopCards, handlePips, handlePrice, handleTypeLine, getImg, getOracleText } from "../apiObjectLogic";
