@@ -5,17 +5,13 @@ import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls";
 import { convertPriceToNumber } from "./apiObjectLogic";
 import type { DbReturnStructure } from "./types/types";
 import cors from "cors";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 const pool = new Pool({
-  user: "davidbrowne",
-  host: "localhost",
-  database: "Staple_db",
-  port: 5432,
-});
-
-const cloud = new Pool({
   connectionString:
-    "postgresql://postgres:Snazziey14%3F@db.rclsqexnxrkytorlmqxa.supabase.co:5432/postgres",
+    process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
@@ -23,7 +19,7 @@ const cloud = new Pool({
 
 async function testConnection() {
   try {
-    const result = await cloud.query("SELECT NOW()");
+    const result = await pool.query("SELECT NOW()");
     console.log("Connected:", result.rows[0]);
   } catch (err) {
     console.error("DB Error here:", err);
