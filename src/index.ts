@@ -9,6 +9,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 
+const PORT  = process.env.PORT || 3000;
+
 const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL,
@@ -139,4 +141,4 @@ cron.schedule(
   },
 );
 
-app.listen(3000, () => console.log("Server running on Port 3000"));
+app.listen(PORT, () => console.log(`Server running on Port ${PORT}`));
