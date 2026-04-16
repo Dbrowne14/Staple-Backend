@@ -1,5 +1,5 @@
 import express, { Request, Response as ExpressResponse } from "express";
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import * as cron from "node-cron";
 import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls.js";
 import { convertPriceToNumber } from "./apiObjectLogic.js";
@@ -11,13 +11,18 @@ dotenv.config();
 
 const PORT  = process.env.PORT || 3000;
 
+interface ExtendedPoolConfig extends PoolConfig {
+  family?: number;
+}
+
 const pool = new Pool({
   connectionString:
     process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-});
+   family: 4,
+}as ExtendedPoolConfig);
 
 async function testConnection() {
   try {
