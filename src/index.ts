@@ -1,3 +1,5 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
 import express, { Request, Response as ExpressResponse } from "express";
 import { Pool, PoolConfig } from "pg";
 import * as cron from "node-cron";
@@ -11,6 +13,7 @@ import type { DbReturnStructure } from "./types/types.js";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
+
 
 const PORT = process.env.PORT || 3000;
 
