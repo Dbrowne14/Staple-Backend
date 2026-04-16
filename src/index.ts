@@ -1,28 +1,30 @@
 import express, { Request, Response as ExpressResponse } from "express";
 import { Pool, PoolConfig } from "pg";
 import * as cron from "node-cron";
-import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls.js";
+import {
+  updateDatabase,
+  selectTodaysWord,
+  updateSetData,
+} from "./cronCalls.js";
 import { convertPriceToNumber } from "./apiObjectLogic.js";
 import type { DbReturnStructure } from "./types/types.js";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
-
-const PORT  = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 interface ExtendedPoolConfig extends PoolConfig {
   family?: number;
 }
 
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-   family: 4,
-}as ExtendedPoolConfig);
+  family: 4,
+} as ExtendedPoolConfig);
 
 async function testConnection() {
   try {
@@ -33,6 +35,26 @@ async function testConnection() {
   }
 }
 
+async function init() {
+  try {
+    await testConnection();
+    console.log("DB connected");
+
+    const response = await pool.query(`
+      SELECT c.*, s.*
+      FROM cards c
+      JOIN sets s ON c.set_code = s.code
+      WHERE date_selected = CURRENT_DATE
+      LIMIT 1
+    `);
+
+    if (response.rows[0]) {
+      todaysWord = convertPriceToNumber(response)[0];
+    }
+  } catch (err) {
+    console.error("Startup error:", err);
+  }
+}
 
 const app = express();
 app.use(cors());
@@ -45,7 +67,6 @@ let todaysWord: DbReturnStructure | null = null;
 app.get("/", (_, res) => {
   res.status(200).json({ response: "HELLO WORLD" });
 });
-
 
 /*----------- Routes -------------- */
 
@@ -124,23 +145,6 @@ cron.schedule(
 
 app.listen(PORT, async () => {
   console.log(`Server running on Port ${PORT}`);
-
-  try {
-    await testConnection();
-    console.log("DB connected");
-
-    const response = await pool.query(
-      `SELECT c.*, s.*
-       FROM cards c
-       JOIN sets s ON c.set_code = s.code
-       WHERE date_selected = CURRENT_DATE
-       LIMIT 1`
-    );
-
-    if (response.rows[0]) {
-      todaysWord = convertPriceToNumber(response)[0];
-    }
-  } catch (err) {
-    console.error("Startup error:", err);
-  }
 });
+
+init()
