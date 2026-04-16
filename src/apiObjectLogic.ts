@@ -2,7 +2,7 @@ import type {
   ReturnStructure,
   DbReturnStructure,
   ScryfallData,
-} from "./types/types";
+} from "./types/types.js";
 import { QueryResult } from "pg";
 
 //logic for handling the variable datastructures

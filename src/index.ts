@@ -1,9 +1,9 @@
 import express, { Request, Response as ExpressResponse } from "express";
 import { Pool } from "pg";
 import * as cron from "node-cron";
-import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls";
-import { convertPriceToNumber } from "./apiObjectLogic";
-import type { DbReturnStructure } from "./types/types";
+import { updateDatabase, selectTodaysWord, updateSetData } from "./cronCalls.js";
+import { convertPriceToNumber } from "./apiObjectLogic.js";
+import type { DbReturnStructure } from "./types/types.js";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();

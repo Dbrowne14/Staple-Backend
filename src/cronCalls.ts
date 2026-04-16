@@ -7,14 +7,14 @@ import {
   fetchTopCards,
   convertPriceToNumber,
   fetchAllSets, getOracleText
-} from "./apiObjectLogic";
-import { cardsLimit } from "./data/inputData";
+} from "./apiObjectLogic.js";
+import { cardsLimit } from "./data/inputData.js";
 
 import type {
   ReturnStructure,
   SetStructure,
   ScryFallSets,
-} from "./types/types";
+} from "./types/types.js";
 
 import { Pool } from "pg";
 
