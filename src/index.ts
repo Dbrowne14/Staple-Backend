@@ -34,31 +34,10 @@ async function testConnection() {
   }
 }
 
-async function init() {
-  try {
-    await testConnection();
-    console.log("DB connected");
-
-    const response = await pool.query(`
-      SELECT c.*, s.*
-      FROM cards c
-      JOIN sets s ON c.set_code = s.code
-      WHERE date_selected = CURRENT_DATE
-      LIMIT 1
-    `);
-
-    if (response.rows[0]) {
-      todaysWord = convertPriceToNumber(response)[0];
-    }
-  } catch (err) {
-    console.error("Startup error:", err);
-  }
-}
 
 const app = express();
 app.use(cors());
 
-let todaysWord: DbReturnStructure | null = null;
 
 /*-------- Tests for dev ------*/
 
@@ -71,26 +50,78 @@ app.get("/", (_, res) => {
 
 // route for front-end to get todaysWord
 app.get("/todays_word", async (_, res) => {
-try {
-    const response = await pool.query(`
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Try to get today's card
+    const existing = await client.query(`
       SELECT c.*, s.*
       FROM cards c
       JOIN sets s ON c.set_code = s.code
-      WHERE date_selected IS NOT NULL
-      ORDER BY date_selected DESC
+      WHERE date_selected = CURRENT_DATE
       LIMIT 1
     `);
 
-    if (!response.rows[0]) {
-      return res.status(404).json({ error: "No word found" });
+    if (existing.rows[0]) {
+      await client.query("COMMIT");
+      return res.json(convertPriceToNumber(existing)[0]);
     }
 
-    const formatted = convertPriceToNumber(response)[0];
+    // 2. Try to assign one
+    const update = await client.query(`
+      UPDATE cards
+      SET date_selected = CURRENT_DATE
+      WHERE id = (
+        SELECT id
+        FROM cards
+        WHERE date_selected IS NULL
+        ORDER BY RANDOM()
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING *;
+    `);
 
-    res.status(200).json(formatted);
-  } catch (err) {
-    console.error("Error fetching todays word:", err);
+    await client.query("COMMIT");
+
+    if (update.rows[0]) {
+      return res.json(convertPriceToNumber(update)[0]);
+    }
+
+    // fallback (shouldn't happen often)
+    const fallback = await pool.query(`
+      SELECT c.*, s.*
+      FROM cards c
+      JOIN sets s ON c.set_code = s.code
+      WHERE date_selected = CURRENT_DATE
+      LIMIT 1
+    `);
+
+    return res.json(convertPriceToNumber(fallback)[0]);
+
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+
+    // 🧠 If UNIQUE constraint was hit → just fetch existing
+    if (err.code === "23505") {
+      const existing = await pool.query(`
+        SELECT c.*, s.*
+        FROM cards c
+        JOIN sets s ON c.set_code = s.code
+        WHERE date_selected = CURRENT_DATE
+        LIMIT 1
+      `);
+
+      return res.json(convertPriceToNumber(existing)[0]);
+    }
+
+    console.error(err);
     res.status(500).json({ error: "Server error" });
+
+  } finally {
+    client.release();
   }
 });
 
@@ -114,9 +145,8 @@ cron.schedule(
   "0 45 11 * * *",
   async () => {
     try {
-      const wordStructure = await selectTodaysWord();
-      todaysWord = wordStructure;
-      console.log(todaysWord);
+       await selectTodaysWord();
+
     } catch (err) {
       console.error("Failed to select random card", err);
     }
@@ -159,7 +189,7 @@ cron.schedule(
 );
 
 app.listen(PORT, async () => {
+  testConnection();
   console.log(`Server running on Port ${PORT}`);
 });
 
-init()
