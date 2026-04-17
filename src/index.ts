@@ -13,7 +13,7 @@ dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,

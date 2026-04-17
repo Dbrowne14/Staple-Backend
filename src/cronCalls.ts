@@ -1,3 +1,5 @@
+import { pool } from "./index.js";
+
 import {
   handlePips,
   handlePrice,
@@ -15,15 +17,6 @@ import type {
   SetStructure,
   ScryFallSets,
 } from "./types/types.js";
-
-import { Pool } from "pg";
-
-const pool = new Pool({
-  user: "davidbrowne",
-  host: "localhost",
-  database: "Staple_db",
-  port: 5432,
-});
 
 export const updateDatabase = async () => {
   const rawData = await fetchTopCards(cardsLimit);
