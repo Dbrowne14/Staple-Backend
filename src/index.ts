@@ -1,4 +1,3 @@
-
 import express, { Request, Response as ExpressResponse } from "express";
 import { Pool } from "pg";
 import * as cron from "node-cron";
@@ -13,17 +12,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
-
 const PORT = process.env.PORT || 3000;
-
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-
-} );
+});
 
 async function testConnection() {
   try {
@@ -34,10 +30,8 @@ async function testConnection() {
   }
 }
 
-
 const app = express();
 app.use(cors());
-
 
 /*-------- Tests for dev ------*/
 
@@ -100,7 +94,6 @@ app.get("/todays_word", async (_, res) => {
     `);
 
     return res.json(convertPriceToNumber(fallback)[0]);
-
   } catch (err: any) {
     await client.query("ROLLBACK");
 
@@ -119,7 +112,6 @@ app.get("/todays_word", async (_, res) => {
 
     console.error(err);
     res.status(500).json({ error: "Server error" });
-
   } finally {
     client.release();
   }
@@ -145,8 +137,7 @@ cron.schedule(
   "0 45 11 * * *",
   async () => {
     try {
-       await selectTodaysWord();
-
+      await selectTodaysWord();
     } catch (err) {
       console.error("Failed to select random card", err);
     }
@@ -188,8 +179,17 @@ cron.schedule(
   },
 );
 
+app.post("/admin/run-monthly-update", async (_, res) => {
+  try {
+    await updateDatabase();
+    await updateSetData();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to update set", err);
+  }
+});
+
 app.listen(PORT, async () => {
   testConnection();
   console.log(`Server running on Port ${PORT}`);
 });
-
