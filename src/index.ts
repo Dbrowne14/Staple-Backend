@@ -70,12 +70,28 @@ app.get("/", (_, res) => {
 /*----------- Routes -------------- */
 
 // route for front-end to get todaysWord
-app.get("/todays_word", (_, res) => {
-  if (!todaysWord) {
-    return res.status(503).json({ error: "Word not ready yet" });
-  }
+app.get("/todays_word", async (_, res) => {
+try {
+    const response = await pool.query(`
+      SELECT c.*, s.*
+      FROM cards c
+      JOIN sets s ON c.set_code = s.code
+      WHERE date_selected IS NOT NULL
+      ORDER BY date_selected DESC
+      LIMIT 1
+    `);
 
-  res.status(200).json(todaysWord);
+    if (!response.rows[0]) {
+      return res.status(404).json({ error: "No word found" });
+    }
+
+    const formatted = convertPriceToNumber(response)[0];
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    console.error("Error fetching todays word:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 //Get all cards
