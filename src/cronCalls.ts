@@ -164,3 +164,24 @@ export const updateSetData = async () => {
     );
   }
 };
+
+export const shouldRunMonthlyUpdate = async() => {
+  const res = await pool.query(`
+    SELECT last_run
+    FROM meta
+    WHERE key = 'monthly_update'
+  `);
+
+  const lastRun = res.rows[0]?.last_run;
+
+  if (!lastRun) return true;
+
+  const last = new Date(lastRun);
+  const now = new Date();
+
+  // same month + year = already ran
+  return (
+    last.getMonth() !== now.getMonth() ||
+    last.getFullYear() !== now.getFullYear()
+  );
+}

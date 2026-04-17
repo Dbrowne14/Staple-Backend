@@ -4,10 +4,9 @@ import * as cron from "node-cron";
 import {
   updateDatabase,
   selectTodaysWord,
-  updateSetData,
+  updateSetData,shouldRunMonthlyUpdate
 } from "./cronCalls.js";
 import { convertPriceToNumber } from "./apiObjectLogic.js";
-import type { DbReturnStructure } from "./types/types.js";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
@@ -167,11 +166,30 @@ cron.schedule(
 // manual update route
 app.post("/admin/run-monthly-update", async (_, res) => {
   try {
+    const shouldRun = await shouldRunMonthlyUpdate();
+
+    if (!shouldRun) {
+      return res.status(200).json({
+        success: true,
+        message: "Already updated this month"
+      });
+    }
+
     await updateDatabase();
     await updateSetData();
-    res.json({ success: true });
+
+    await pool.query(`
+      INSERT INTO meta (key, last_run)
+      VALUES ('monthly_update', NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET last_run = NOW();
+    `);
+
+    res.status(200).json({ success: true });
+
   } catch (err) {
-    console.error("Failed to update set", err);
+    console.error("Monthly update failed:", err);
+    res.status(500).json({ error: "Monthly update failed" });
   }
 });
 
