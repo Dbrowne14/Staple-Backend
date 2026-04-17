@@ -152,26 +152,11 @@ cron.schedule(
   "0 0 0 1 * *",
   async () => {
     try {
-      console.log("Starting weekly db update");
+      console.log("Starting weekly  update");
       await updateDatabase();
-    } catch (err) {
-      console.error("Failed to update cards:", err);
-    }
-  },
-  {
-    timezone: "Europe/London",
-  },
-);
-
-//run cron call for monthly set update tunds at 1am first day of month
-cron.schedule(
-  "0 0 1 1 * *",
-  async () => {
-    try {
-      console.log("Updating dataset");
       await updateSetData();
     } catch (err) {
-      console.error("Failed to update set", err);
+      console.error("Failed to update :", err);
     }
   },
   {
@@ -179,6 +164,7 @@ cron.schedule(
   },
 );
 
+// manual update route
 app.post("/admin/run-monthly-update", async (_, res) => {
   try {
     await updateDatabase();
