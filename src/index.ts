@@ -182,9 +182,9 @@ app.get("/admin/run-monthly-update", async (_, res) => {
         message: "Already updated this month"
       });
     }
-
-    await updateDatabase();
     await updateSetData();
+    await updateDatabase();
+
 
     await pool.query(`
       INSERT INTO meta (key, last_run)
