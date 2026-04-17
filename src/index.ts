@@ -154,9 +154,17 @@ cron.schedule(
       console.log("Starting weekly  update");
       await updateDatabase();
       await updateSetData();
-    } catch (err) {
-      console.error("Failed to update :", err);
-    }
+
+    await pool.query(`
+      INSERT INTO meta (key, last_run)
+      VALUES ('monthly_update', NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET last_run = NOW();
+    `);
+
+  } catch (err) {
+    console.error("Monthly update failed:", err);
+  }
   },
   {
     timezone: "Europe/London",
@@ -164,7 +172,7 @@ cron.schedule(
 );
 
 // manual update route
-app.post("/admin/run-monthly-update", async (_, res) => {
+app.get("/admin/run-monthly-update", async (_, res) => {
   try {
     const shouldRun = await shouldRunMonthlyUpdate();
 
