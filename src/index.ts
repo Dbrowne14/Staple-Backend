@@ -172,7 +172,7 @@ cron.schedule(
 );
 
 // manual update route
-app.get("/admin/run-monthly-update", async (_, res) => {
+app.post("/admin/run-monthly-update", async (_, res) => {
   try {
     const shouldRun = await shouldRunMonthlyUpdate();
 
@@ -204,4 +204,24 @@ app.get("/admin/run-monthly-update", async (_, res) => {
 app.listen(PORT, async () => {
   testConnection();
   console.log(`Server running on Port ${PORT}`);
+});
+
+app.post("/admin/force-update", async (_, res) => {
+  try {
+    await updateSetData();
+    await updateDatabase();
+
+    await pool.query(`
+      INSERT INTO meta (key, last_run)
+      VALUES ('monthly_update', NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET last_run = NOW();
+    `);
+
+    res.status(200).json({ success: true });
+
+  } catch (err) {
+    console.error("Monthly update failed:", err);
+    res.status(500).json({ error: "Monthly update failed" });
+  }
 });
