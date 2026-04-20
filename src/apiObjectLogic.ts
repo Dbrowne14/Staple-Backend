@@ -7,6 +7,7 @@ import { QueryResult } from "pg";
 
 //logic for handling the variable datastructures
 const baseUrl = "https://api.scryfall.com";
+const eur_usd = 1.18; // eventually find an api for this - temporary solution
 
 const fetchTopCards = async (limit: number) => {
   let allCards: ReturnStructure[] = [];
@@ -73,7 +74,15 @@ function handleYear(date: string) {
 }
 
 function handlePrice(returnStucture: ReturnStructure) {
-  return Number(returnStucture.prices.usd);
+  const { usd, usd_foil, eur, eur_foil } = returnStucture.prices;
+  if (usd ?? usd_foil) {
+    return Number(usd ?? usd_foil);
+  }
+
+  if (eur ?? eur_foil) {
+    return Number(eur ?? eur_foil) * eur_usd;
+  }
+  return 0;
 }
 
 function handleTypeLine(returnStructure: ReturnStructure) {

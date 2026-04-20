@@ -15,6 +15,9 @@ export interface ReturnStructure {
   set_name: string;
   prices: {
     usd: string;
+    usd_foil: string;
+    eur: string;
+    eur_foil: string;
   };
   color_identity: string[];
   image_uris?: { normal: string };
