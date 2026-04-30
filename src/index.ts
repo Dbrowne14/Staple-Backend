@@ -225,3 +225,5 @@ app.post("/admin/force-update", async (_, res) => {
     res.status(500).json({ error: "Monthly update failed" });
   }
 });
+
+//add a post route to check and change certain text for the clue on the basis of the name
